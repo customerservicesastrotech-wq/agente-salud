@@ -75,7 +75,7 @@ const state = {
   externalConsent:false, aiConfigured:false, transcriptionModel:"", analysisModel:"", pendingMetrics:[],
   pendingEvents:[], mediaRecorder:null, mediaStream:null, audioChunks:[], recognition:null, recording:false,
   recordingMode:null, currentInputSource:"text", recognitionBase:"", recognitionFinal:"", timerId:null, timerStarted:0,
-  draftTimer:null, toastTimer:null, savingPhase:false, finalizing:false, confirmationResolve:null
+  draftTimer:null, toastTimer:null, savingPhase:false, finalizing:false, confirmationResolve:null, startingMediaRecorder:false
 };
 
 function localToday() {
@@ -307,13 +307,18 @@ function setupSpeechRecognition() {
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.onresult = (event) => {
+    // Reconstruimos siempre la cadena final desde cero para evitar duplicados
+    // cuando el navegador reenvía resultados ya definitivos en onresult.
+    let finalText = "";
     let interim = "";
-    for (let index = event.resultIndex; index < event.results.length; index += 1) {
+    for (let index = 0; index < event.results.length; index += 1) {
       const text = event.results[index][0].transcript.trim();
-      if (event.results[index].isFinal) state.recognitionFinal += `${state.recognitionFinal ? " " : ""}${text}`;
+      if (!text) continue;
+      if (event.results[index].isFinal) finalText += `${finalText ? " " : ""}${text}`;
       else interim += `${interim ? " " : ""}${text}`;
     }
-    $("transcript").value = [state.recognitionBase, state.recognitionFinal, interim].filter(Boolean).join(" ").trim();
+    state.recognitionFinal = finalText;
+    $("transcript").value = [state.recognitionBase, finalText, interim].filter(Boolean).join(" ").trim();
     state.currentInputSource = "voice";
     updateCueCoverage();
   };
@@ -332,6 +337,8 @@ function setupSpeechRecognition() {
 }
 
 async function startMediaRecording() {
+  if (state.startingMediaRecorder) return;
+  state.startingMediaRecorder = true;
   try {
     state.mediaStream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true }, video:false });
     const preferred = ["audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus"].find((type) => window.MediaRecorder?.isTypeSupported?.(type));
@@ -348,6 +355,8 @@ async function startMediaRecording() {
   } catch (error) {
     stopMediaTracks();
     setRecordingUI(false, error?.name === "NotAllowedError" ? "No se concedió permiso para usar el micrófono." : "No pude iniciar el micrófono. Puedes escribir tu relato.", true);
+  } finally {
+    state.startingMediaRecorder = false;
   }
 }
 
