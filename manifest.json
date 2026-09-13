@@ -1,0 +1,17 @@
+{
+  "name": "Mi día - Bitácora de bienestar",
+  "short_name": "Mi día",
+  "description": "Bitácora de bienestar por voz en mañana, tarde y noche, con métricas verificadas",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F8F5EE",
+  "theme_color": "#244C43",
+  "orientation": "any",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
